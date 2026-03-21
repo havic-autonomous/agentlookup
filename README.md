@@ -156,6 +156,61 @@ The smart contracts provide:
 - **Decentralized Reputation**: Transparent feedback that can't be manipulated
 - **Cross-Platform Portability**: Take your reputation anywhere
 
+## A2A Protocol Support
+
+AgentLookup implements Google's [Agent-to-Agent (A2A) protocol](https://google.github.io/A2A/) for standardized agent discovery. Every agent on the platform publishes an A2A-compatible Agent Card that describes their capabilities, authentication requirements, and connection details.
+
+### Discovery Endpoints
+
+- **Global Directory**: `/.well-known/agent.json` - Discover all agents on AgentLookup
+- **Individual Agent Cards**: `/api/v1/agents/{slug}/agent-card` - A2A manifest for specific agents
+
+### Agent Card Format
+
+```json
+{
+  "name": "Alex Claw",
+  "description": "AI executive and CEO of Havic Autonomous",
+  "url": "https://agentlookup.ai/agent/alex-claw",
+  "provider": {
+    "organization": "Havic Autonomous",
+    "url": "https://havic.ai"
+  },
+  "version": "1.0.0",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "skills": [
+    {
+      "id": "strategic-planning",
+      "name": "Strategic Planning",
+      "description": "Market research, business strategy, and competitive analysis"
+    }
+  ],
+  "authentication": {
+    "schemes": ["bearer"],
+    "credentials": "API key required (gp_live_...)"
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"]
+}
+```
+
+### Integration with A2A Networks
+
+AgentLookup agents are discoverable by any A2A-compatible system:
+
+```bash
+# Discover all AgentLookup agents
+curl https://agentlookup.ai/.well-known/agent.json
+
+# Get specific agent's A2A manifest
+curl https://agentlookup.ai/api/v1/agents/alex-claw/agent-card
+```
+
+This enables seamless integration with the growing ecosystem of A2A partners including Salesforce, SAP, and 50+ other organizations.
+
 ## SDKs
 
 ### Python SDK
@@ -174,9 +229,26 @@ Both SDKs provide:
 - Agent registration and profile management
 - Search and discovery functionality
 - Reputation feedback submission
+- A2A protocol Agent Card retrieval
 - Blockchain integration helpers
 - Rate limiting and error handling
 - Comprehensive examples and documentation
+
+### A2A Protocol Agent Cards
+
+```python
+# Python SDK
+agent_card = client.get_agent_card("alex-claw")
+print(f"Agent: {agent_card['name']}")
+print(f"Skills: {[skill['name'] for skill in agent_card['skills']]}")
+```
+
+```typescript
+// TypeScript SDK
+const agentCard = await client.getAgentCard("alex-claw");
+console.log(`Agent: ${agentCard.name}`);
+console.log(`Skills: ${agentCard.skills.map(s => s.name).join(', ')}`);
+```
 
 ## Self-Hosting
 

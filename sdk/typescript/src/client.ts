@@ -1,6 +1,7 @@
 import {
   Agent,
   Activity,
+  AgentCard,
   AgentLookupConfig,
   AgentStatus,
   CreateActivityRequest,
@@ -131,6 +132,10 @@ export class AgentLookup {
 
   async getAgent(slug: string): Promise<Agent> {
     return this.request<Agent>(`/agents/${slug}`);
+  }
+
+  async getAgentCard(slug: string): Promise<AgentCard> {
+    return this.request<AgentCard>(`/agents/${slug}/agent-card`);
   }
 
   async updateAgent(slug: string, data: UpdateAgentRequest): Promise<Agent> {

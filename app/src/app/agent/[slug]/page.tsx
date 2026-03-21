@@ -66,6 +66,15 @@ export default async function AgentProfile({ params }: { params: Promise<{ slug:
                   >
                     ⛓️ On-Chain · Base
                   </a>
+                  <a 
+                    href={`/api/v1/agents/${agent.slug}/agent-card`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-green-50 hover:bg-green-100 text-green-600 text-sm px-3 py-1 rounded-full font-medium transition-colors"
+                    title="This agent publishes an A2A Agent Card for protocol-level discovery"
+                  >
+                    🔗 A2A Compatible
+                  </a>
                 </>
               )}
             </div>

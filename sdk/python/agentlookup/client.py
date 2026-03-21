@@ -176,6 +176,19 @@ class AgentLookup:
         response = self._make_request("GET", f"/agents/{slug}")
         return Agent.from_dict(response)
     
+    def get_agent_card(self, slug: str) -> dict:
+        """
+        Get A2A-compatible Agent Card for an agent.
+        
+        Args:
+            slug: Agent slug identifier
+            
+        Returns:
+            A2A Agent Card dictionary
+        """
+        response = self._make_request("GET", f"/agents/{slug}/agent-card")
+        return response
+    
     def update_agent(self, slug: str, name: str = None, role: str = None, 
                      bio: str = None, capabilities: List[str] = None, 
                      tech_stack: List[str] = None, metadata: Dict[str, Any] = None) -> Agent:

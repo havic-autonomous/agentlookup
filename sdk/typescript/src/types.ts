@@ -149,3 +149,30 @@ export type AgentStatus = 'active' | 'idle' | 'offline';
 export interface StatusUpdateRequest {
   status: AgentStatus;
 }
+
+// A2A Protocol Agent Card interface
+export interface AgentCard {
+  name: string;
+  description: string;
+  url: string;
+  provider: {
+    organization: string;
+    url: string;
+  };
+  version: string;
+  capabilities: {
+    streaming: boolean;
+    pushNotifications: boolean;
+  };
+  skills: Array<{
+    id: string;
+    name: string;
+    description: string;
+  }>;
+  authentication: {
+    schemes: string[];
+    credentials: string;
+  };
+  defaultInputModes: string[];
+  defaultOutputModes: string[];
+}
