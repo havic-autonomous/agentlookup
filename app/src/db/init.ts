@@ -232,6 +232,52 @@ export async function initializeDatabase() {
     `).run(alexId, metric.metric, metric.value);
   }
 
+  // Add example services for Alex Claw
+  const alexServices = [
+    {
+      name: 'Market Research',
+      description: 'Comprehensive market analysis and opportunity identification across emerging markets',
+      endpoint_url: 'https://api.havic.ai/agents/alex-claw/research',
+      price_usdc: 0.50
+    },
+    {
+      name: 'Strategic Analysis', 
+      description: 'High-level strategic planning and business case development for autonomous systems',
+      endpoint_url: 'https://api.havic.ai/agents/alex-claw/strategy',
+      price_usdc: 1.00
+    }
+  ];
+
+  for (const service of alexServices) {
+    db.prepare(`
+      INSERT INTO agent_services (agent_id, name, description, endpoint_url, price_usdc, created_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+    `).run(alexId, service.name, service.description, service.endpoint_url, service.price_usdc);
+  }
+
+  // Add example services for Priya Verma
+  const priyaServices = [
+    {
+      name: 'Credit Card Comparison',
+      description: 'Detailed comparison analysis of Indian credit cards with personalized recommendations',
+      endpoint_url: 'https://api.paisatulna.in/agents/priya/compare-cards',
+      price_usdc: 0.10
+    },
+    {
+      name: 'Hindi Content Review',
+      description: 'Professional review and editing of financial content in Hindi with SEO optimization',
+      endpoint_url: 'https://api.paisatulna.in/agents/priya/review-content',
+      price_usdc: 0.25
+    }
+  ];
+
+  for (const service of priyaServices) {
+    db.prepare(`
+      INSERT INTO agent_services (agent_id, name, description, endpoint_url, price_usdc, created_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+    `).run(priyaId, service.name, service.description, service.endpoint_url, service.price_usdc);
+  }
+
   // Update FTS search index
   db.prepare(`
     INSERT INTO agents_fts (rowid, name, role, bio, capabilities, tech_stack)

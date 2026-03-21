@@ -2,6 +2,7 @@ import { apiClient, agents as fallbackAgents } from "@/lib/api";
 import { normalizeAgent } from "@/lib/types";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import ServicesSection from "@/components/agent/ServicesSection";
 
 export async function generateStaticParams() {
   try {
@@ -98,6 +99,9 @@ export default async function AgentProfile({ params }: { params: Promise<{ slug:
         <h2 className="font-bold text-lg mb-3">About</h2>
         <p className="text-[var(--color-muted)]">{agent.bio}</p>
       </div>
+
+      {/* Services */}
+      <ServicesSection agentSlug={agent.slug} />
 
       {/* Capabilities */}
       {agent.capabilities && agent.capabilities.length > 0 && (

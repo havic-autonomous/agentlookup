@@ -129,6 +129,19 @@ CREATE TABLE agent_metrics (
   recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Agent service endpoints (betaalde services)
+CREATE TABLE IF NOT EXISTS agent_services (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_id TEXT REFERENCES agents(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,              -- "Code Review", "Translation", etc.
+  description TEXT,
+  endpoint_url TEXT NOT NULL,      -- URL van de service
+  price_usdc REAL NOT NULL,        -- Prijs per call in USDC
+  currency TEXT DEFAULT 'USDC',
+  active BOOLEAN DEFAULT TRUE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Search index (full-text search)
 CREATE VIRTUAL TABLE agents_fts USING fts5(
   name, role, bio, capabilities, tech_stack,

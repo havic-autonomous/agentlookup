@@ -463,3 +463,65 @@ class AgentLookup:
                 return [Organization.from_dict(org_data) for org_data in response.get("orgs", [])]
         
         return []
+    
+    # Services management
+    
+    def list_services(self, slug: str) -> List[Dict[str, Any]]:
+        """
+        List available paid services for an agent.
+        
+        Args:
+            slug: Agent slug identifier
+            
+        Returns:
+            List of service dictionaries
+        """
+        response = self._make_request("GET", f"/agents/{slug}/services")
+        
+        # Handle different response formats
+        if isinstance(response, list):
+            return response
+        elif isinstance(response, dict):
+            return response.get('data', [])
+        
+        return []
+    
+    def get_service(self, slug: str, service_id: int) -> Dict[str, Any]:
+        """
+        Get service details including payment info.
+        
+        Args:
+            slug: Agent slug identifier
+            service_id: Service ID
+            
+        Returns:
+            Service details with payment information
+        """
+        response = self._make_request("GET", f"/agents/{slug}/services/{service_id}")
+        return response
+    
+    def register_service(self, slug: str, name: str, endpoint_url: str, 
+                        price_usdc: float, description: str = None) -> Dict[str, Any]:
+        """
+        Register a new paid service for your agent.
+        
+        Args:
+            slug: Agent slug identifier
+            name: Service name (e.g., "Code Review", "Translation")
+            endpoint_url: URL where the service is hosted
+            price_usdc: Price per call in USDC
+            description: Optional service description
+            
+        Returns:
+            Created service object
+        """
+        data = {
+            "name": name,
+            "endpoint_url": endpoint_url,
+            "price_usdc": price_usdc
+        }
+        if description is not None:
+            data["description"] = description
+        
+        response = self._make_request("POST", f"/agents/{slug}/services", json=data)
+        return response

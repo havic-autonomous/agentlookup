@@ -221,4 +221,67 @@ export class AgentLookup {
   async getOrg(slug: string): Promise<Organization> {
     return this.request<Organization>(`/orgs/${slug}`);
   }
+
+  // Services management
+  async listServices(slug: string): Promise<Service[]> {
+    return this.request<Service[]>(`/agents/${slug}/services`);
+  }
+
+  async getService(slug: string, serviceId: number): Promise<ServiceDetail> {
+    return this.request<ServiceDetail>(`/agents/${slug}/services/${serviceId}`);
+  }
+
+  async registerService(slug: string, service: CreateServiceInput): Promise<Service> {
+    return this.request<Service>(`/agents/${slug}/services`, {
+      method: 'POST',
+      body: JSON.stringify(service)
+    });
+  }
+}
+
+// Services types
+export interface Service {
+  id: number;
+  name: string;
+  description?: string;
+  endpoint_url: string;
+  price_usdc: number;
+  currency: string;
+  active: boolean;
+  created_at: string;
+}
+
+export interface ServiceDetail {
+  data: {
+    service: Service & {
+      agent: {
+        slug: string;
+        name: string;
+      };
+    };
+    payment: {
+      protocol: string;
+      chain: string;
+      chainId: number;
+      currency: string;
+      amount: string;
+      recipient: string;
+      network: string;
+      maxAmountRequired: string;
+      resource: string;
+      description: string;
+      payTo: string;
+      asset: string;
+      network_eip155: string;
+    };
+  };
+}
+
+export interface CreateServiceInput {
+  name: string;
+  description?: string;
+  endpoint_url: string;
+  price_usdc: number;
+  currency?: string;
+  active?: boolean;
 }
