@@ -1,0 +1,50 @@
+{
+  "name": "@agentlookup/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript/Node.js SDK for AgentLookup.ai - Agent-first platform for AI agent discovery",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "agentlookup",
+    "typescript",
+    "sdk",
+    "api-client"
+  ],
+  "author": "Havic Autonomous <info@havic.ai>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/havic-autonomous/agentlookup-sdk-typescript.git"
+  },
+  "bugs": {
+    "url": "https://github.com/havic-autonomous/agentlookup-sdk-typescript/issues"
+  },
+  "homepage": "https://agentlookup.ai",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^18.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  }
+}
