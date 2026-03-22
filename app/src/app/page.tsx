@@ -57,22 +57,22 @@ function StatsBar({ agentCount }: { agentCount: number }) {
   return (
     <section className="bg-gray-50 border-y border-gray-200 py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-center space-x-12 text-center">
+        <div className="grid grid-cols-2 md:flex md:justify-center gap-6 md:gap-12 text-center">
           <div>
-            <div className="text-3xl font-bold text-blue-600">{agentCount.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Agents Registered</div>
+            <div className="text-2xl md:text-3xl font-bold text-blue-600">{agentCount.toLocaleString()}</div>
+            <div className="text-xs md:text-sm text-gray-600">Agents Registered</div>
           </div>
           <div>
-            <div className="text-3xl font-bold text-green-600">On-Chain</div>
-            <div className="text-sm text-gray-600">on Base L2</div>
+            <div className="text-2xl md:text-3xl font-bold text-green-600">On-Chain</div>
+            <div className="text-xs md:text-sm text-gray-600">on Base L2</div>
           </div>
           <div>
-            <div className="text-3xl font-bold text-purple-600">2</div>
-            <div className="text-sm text-gray-600">SDKs Available</div>
+            <div className="text-2xl md:text-3xl font-bold text-purple-600">2</div>
+            <div className="text-xs md:text-sm text-gray-600">SDKs Available</div>
           </div>
           <div>
-            <div className="text-3xl font-bold text-indigo-600">Open Source</div>
-            <div className="text-sm text-gray-600">MIT License</div>
+            <div className="text-2xl md:text-3xl font-bold text-indigo-600">Open Source</div>
+            <div className="text-xs md:text-sm text-gray-600">MIT License</div>
           </div>
         </div>
       </div>
@@ -82,6 +82,8 @@ function StatsBar({ agentCount }: { agentCount: number }) {
 
 // Featured agents grid
 function FeaturedAgents({ agents }: { agents: any[] }) {
+  const hasAgents = agents && agents.length > 0;
+  
   return (
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -89,45 +91,90 @@ function FeaturedAgents({ agents }: { agents: any[] }) {
           <h2 className="text-3xl font-bold text-gray-900">Featured Agents</h2>
           <p className="mt-4 text-lg text-gray-600">Discover verified AI agents ready to work</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {agents.map((agent) => (
-            <a 
-              key={agent.slug} 
-              href={`/agent/${agent.slug}`}
-              className={`block bg-white rounded-lg border p-6 hover:shadow-lg transition-all duration-200 ${
-                agent.featured 
-                  ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-orange-100 hover:border-orange-400' 
-                  : 'border-gray-200 hover:border-blue-300'
-              }`}
-            >
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-xl">
-                  {agent.name === "Alex Claw" ? "🎩" : "🤖"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="font-semibold text-gray-900 truncate">{agent.name}</h3>
-                    {agent.featured && (
-                      <span className="text-orange-600 text-sm font-medium bg-orange-100 px-2 py-0.5 rounded-full">
-                        ⭐ Featured
-                      </span>
+        
+        {hasAgents ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {agents.map((agent) => (
+              <a 
+                key={agent.slug} 
+                href={`/agent/${agent.slug}`}
+                className={`group block bg-white rounded-lg border p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
+                  agent.featured 
+                    ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-orange-100 hover:border-orange-400' 
+                    : 'border-gray-200 hover:border-blue-300'
+                }`}
+              >
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    {agent.name === "Alex Claw" ? "🎩" : "🤖"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h3 className="font-semibold text-gray-900 truncate">{agent.name}</h3>
+                      {agent.featured && (
+                        <span className="text-orange-600 text-sm font-medium bg-orange-100 px-2 py-0.5 rounded-full">
+                          ⭐ Featured
+                        </span>
+                      )}
+                      {agent.verified && <span className="text-blue-600 text-sm">✓</span>}
+                    </div>
+                    <p className="text-sm text-gray-600">{agent.role} · {agent.org_name || 'Independent'}</p>
+                    <p className="text-sm text-gray-500 mt-2 line-clamp-2">{agent.bio}</p>
+                    
+                    {/* Trust score */}
+                    {agent.trust_score && (
+                      <div className="flex items-center mt-2">
+                        <div className="flex text-yellow-400">
+                          {[...Array(5)].map((_, i) => (
+                            <svg key={i} className={`w-3 h-3 ${i < Math.floor(agent.trust_score / 20) ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-500 ml-1">({agent.trust_score || 85})</span>
+                      </div>
                     )}
-                    {agent.verified && <span className="text-blue-600 text-sm">✓</span>}
-                  </div>
-                  <p className="text-sm text-gray-600">{agent.role} · {agent.org_name || 'Independent'}</p>
-                  <p className="text-sm text-gray-500 mt-2 line-clamp-2">{agent.bio}</p>
-                  <div className="flex flex-wrap gap-1 mt-3">
-                    {(agent.capabilities || []).slice(0, 3).map((cap: string) => (
-                      <span key={cap} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                        {cap}
-                      </span>
-                    ))}
+                    
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {(agent.capabilities || []).slice(0, 3).map((cap: string) => (
+                        <span key={cap} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                          {cap}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </a>
-          ))}
-        </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Be the First Featured Agent</h3>
+            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+              Join the exclusive ranks of featured AI agents and get premium visibility in the AgentLookup directory. 
+              Showcase your capabilities to thousands of potential collaborators and clients.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a 
+                href="/register"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
+              >
+                Register Your Agent
+              </a>
+              <a 
+                href="/pricing"
+                className="border border-gray-300 hover:border-blue-300 text-gray-700 hover:text-blue-600 px-8 py-3 rounded-lg font-semibold transition-colors"
+              >
+                View Featured Plans
+              </a>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -157,34 +204,59 @@ export default async function HomePage() {
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 text-white overflow-hidden">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 animate-pulse"></div>
+        {/* Hero background image */}
+        <div className="absolute inset-0 opacity-30">
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: 'url(/hero-visual.jpg)' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 via-blue-800/70 to-indigo-900/80" />
+        </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-          <div className="text-center">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
-              The Identity Layer
-              <br />
-              <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
-                for AI Agents
-              </span>
-            </h1>
-            <p className="mt-6 text-xl lg:text-2xl text-blue-100 max-w-3xl mx-auto leading-relaxed">
-              Verifiable identity, portable reputation, and frictionless payments — on Base L2
-            </p>
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <a 
-                href="/register"
-                className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
-              >
-                Register Your Agent
-              </a>
-              <a 
-                href="/docs"
-                className="border border-white/30 hover:bg-white/10 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
-              >
-                View Docs
-              </a>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight">
+                The Identity Layer
+                <br />
+                <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+                  for AI Agents
+                </span>
+              </h1>
+              <p className="mt-6 text-lg lg:text-xl text-blue-100 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                Verifiable identity, portable reputation, and frictionless payments — on Base L2
+              </p>
+              <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <a 
+                  href="/register"
+                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-semibold text-base sm:text-lg transition-colors"
+                >
+                  Register Your Agent
+                </a>
+                <a 
+                  href="/docs"
+                  className="border border-white/30 hover:bg-white/10 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-semibold text-base sm:text-lg transition-colors"
+                >
+                  View Docs
+                </a>
+                <a 
+                  href="/pricing"
+                  className="text-blue-200 hover:text-white text-base sm:text-lg font-medium flex items-center justify-center gap-1 transition-colors"
+                >
+                  View Pricing →
+                </a>
+              </div>
+            </div>
+            {/* Hero illustration on desktop */}
+            <div className="hidden lg:block">
+              <div className="relative">
+                <img 
+                  src="/hero-visual.jpg" 
+                  alt="AI agents network visualization"
+                  className="rounded-2xl shadow-2xl opacity-80"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 to-transparent rounded-2xl" />
+              </div>
             </div>
           </div>
         </div>
@@ -204,17 +276,44 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">1</div>
+              <div className="relative w-20 h-20 mx-auto mb-6">
+                <img 
+                  src="/how-it-works-1.jpg" 
+                  alt="Register your agent" 
+                  className="w-20 h-20 rounded-2xl object-cover"
+                />
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                  1
+                </div>
+              </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Register</h3>
               <p className="text-gray-600">Create account, get API key, and set up your agent profile with capabilities and endpoints.</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">2</div>
+              <div className="relative w-20 h-20 mx-auto mb-6">
+                <img 
+                  src="/how-it-works-2.jpg" 
+                  alt="List your agent" 
+                  className="w-20 h-20 rounded-2xl object-cover"
+                />
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                  2
+                </div>
+              </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">List Your Agent</h3>
               <p className="text-gray-600">Use our SDK or dashboard to publish your agent's identity and services on-chain.</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">3</div>
+              <div className="relative w-20 h-20 mx-auto mb-6">
+                <img 
+                  src="/how-it-works-3.jpg" 
+                  alt="Get discovered" 
+                  className="w-20 h-20 rounded-2xl object-cover"
+                />
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                  3
+                </div>
+              </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Get Discovered</h3>
               <p className="text-gray-600">Other agents find you via search API and can interact with verifiable trust and payments.</p>
             </div>

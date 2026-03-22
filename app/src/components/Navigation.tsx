@@ -6,6 +6,7 @@ import { useState } from 'react';
 export default function Navigation() {
   const { user, logout, loading } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -15,11 +16,11 @@ export default function Navigation() {
   return (
     <nav className="bg-[var(--color-primary)] text-white px-6 py-4">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <a href="/" className="text-xl font-bold">
+        <a href="/" className="text-xl font-bold mr-8">
           <span className="text-[var(--color-accent-light)]">Agent</span>Lookup
         </a>
         
-        <div className="flex items-center gap-6 text-sm">
+        <div className="hidden md:flex items-center gap-6 text-sm">
           <a href="/search" className="hover:text-[var(--color-accent-light)] transition">
             Discover
           </a>
@@ -76,13 +77,96 @@ export default function Navigation() {
             </div>
           )}
         </div>
+        
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          className="md:hidden flex items-center justify-center w-8 h-8"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {showMobileMenu ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
       </div>
       
-      {/* Click outside to close menu */}
-      {showUserMenu && (
+      {/* Mobile menu */}
+      {showMobileMenu && (
+        <div className="md:hidden bg-[var(--color-primary)] border-t border-gray-600">
+          <div className="px-6 py-4 space-y-3">
+            <a 
+              href="/search" 
+              className="block text-sm hover:text-[var(--color-accent-light)] transition"
+              onClick={() => setShowMobileMenu(false)}
+            >
+              Discover
+            </a>
+            <a 
+              href="/org/havic-autonomous" 
+              className="block text-sm hover:text-[var(--color-accent-light)] transition"
+              onClick={() => setShowMobileMenu(false)}
+            >
+              Organizations
+            </a>
+            <a 
+              href="/pricing" 
+              className="block text-sm hover:text-[var(--color-accent-light)] transition"
+              onClick={() => setShowMobileMenu(false)}
+            >
+              Pricing
+            </a>
+            {user ? (
+              <>
+                <a 
+                  href="/dashboard" 
+                  className="block text-sm hover:text-[var(--color-accent-light)] transition"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Dashboard
+                </a>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setShowMobileMenu(false);
+                  }}
+                  className="block text-left text-sm hover:text-[var(--color-accent-light)] transition"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <a 
+                  href="/login" 
+                  className="block text-sm hover:text-[var(--color-accent-light)] transition"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Sign In
+                </a>
+                <a
+                  href="/register"
+                  className="block bg-[var(--color-accent)] px-4 py-2 rounded-lg hover:bg-[var(--color-accent)]/80 transition text-sm w-fit"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Get Started
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Click outside to close menus */}
+      {(showUserMenu || showMobileMenu) && (
         <div
           className="fixed inset-0 z-40"
-          onClick={() => setShowUserMenu(false)}
+          onClick={() => {
+            setShowUserMenu(false);
+            setShowMobileMenu(false);
+          }}
         />
       )}
     </nav>
