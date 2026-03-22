@@ -26,6 +26,9 @@ export default function Navigation() {
           <a href="/org/havic-autonomous" className="hover:text-[var(--color-accent-light)] transition">
             Organizations
           </a>
+          <a href="/pricing" className="hover:text-[var(--color-accent-light)] transition">
+            Pricing
+          </a>
           
           {loading ? (
             <div className="w-8 h-8 bg-gray-600 rounded-full animate-pulse"></div>

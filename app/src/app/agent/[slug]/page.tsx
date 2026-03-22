@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import ServicesSection from "@/components/agent/ServicesSection";
 import VerificationBadges from "@/components/agent/VerificationBadges";
+import { getActivePaidFeatures } from "@/lib/expiry-checker";
+import { getDatabase } from "@/db/connection";
 
 export async function generateStaticParams() {
   try {
@@ -16,11 +18,38 @@ export async function generateStaticParams() {
 
 async function getAgent(slug: string) {
   try {
-    return await apiClient.getAgent(slug);
+    const agent = await apiClient.getAgent(slug);
+    
+    if (agent) {
+      // Get paid features for this agent
+      const db = getDatabase();
+      const agentRecord = db.prepare('SELECT id FROM agents WHERE slug = ?').get(slug) as { id: string } | undefined;
+      
+      if (agentRecord) {
+        const paidFeatures = getActivePaidFeatures(agentRecord.id);
+        agent.paidFeatures = paidFeatures;
+      }
+    }
+    
+    return agent;
   } catch (error) {
     console.warn(`Failed to fetch agent ${slug} from API, using fallback data:`, error);
     const fallbackAgent = fallbackAgents.find((a) => a.slug === slug);
-    return fallbackAgent ? normalizeAgent(fallbackAgent) : null;
+    if (fallbackAgent) {
+      const normalizedAgent = normalizeAgent(fallbackAgent);
+      
+      // Get paid features for fallback agent too
+      const db = getDatabase();
+      const agentRecord = db.prepare('SELECT id FROM agents WHERE slug = ?').get(slug) as { id: string } | undefined;
+      
+      if (agentRecord) {
+        const paidFeatures = getActivePaidFeatures(agentRecord.id);
+        normalizedAgent.paidFeatures = paidFeatures;
+      }
+      
+      return normalizedAgent;
+    }
+    return null;
   }
 }
 
@@ -68,7 +97,7 @@ export default async function AgentProfile({ params }: { params: Promise<{ slug:
                 🔗 A2A Compatible
               </a>
             </div>
-            <VerificationBadges verifications={agent.verifications} trustScore={agent.trust_score} />
+            <VerificationBadges verifications={agent.verifications} trustScore={agent.trust_score} paidFeatures={agent.paidFeatures} />
             <p className="text-[var(--color-muted)] mt-1">{agent.role} · {agent.org_name && agent.org_slug ? (
               <a href={`/org/${agent.org_slug}`} className="text-[var(--color-accent)] hover:underline">{agent.org_name}</a>
             ) : (

@@ -1,5 +1,7 @@
 import { apiClient, agents as fallbackAgents } from "@/lib/api";
 import { normalizeAgent } from "@/lib/types";
+import { getFeaturedAgents as getFeaturedAgentsFromDb } from "@/lib/expiry-checker";
+import { getDatabase } from "@/db/connection";
 import { Suspense } from "react";
 
 // Stats fetcher
@@ -20,6 +22,28 @@ async function getStats() {
 // Featured agents fetcher  
 async function getFeaturedAgents() {
   try {
+    // First try to get agents with active featured listings
+    const featuredAgents = getFeaturedAgentsFromDb();
+    
+    if (featuredAgents.length > 0) {
+      // Add capabilities and other details from the database
+      const db = getDatabase();
+      const enrichedAgents = featuredAgents.map(agent => {
+        const capabilities = db.prepare('SELECT capability FROM agent_capabilities WHERE agent_id = ?').all(agent.id);
+        const techStack = db.prepare('SELECT technology FROM agent_tech_stack WHERE agent_id = ?').all(agent.id);
+        
+        return {
+          ...agent,
+          capabilities: capabilities.map((c: any) => c.capability),
+          tech_stack: techStack.map((t: any) => t.technology),
+          featured: true
+        };
+      });
+      
+      return enrichedAgents;
+    }
+    
+    // Fallback to verified agents if no featured agents
     const { agents } = await apiClient.getAgents({ limit: 6, verified: true });
     return agents;
   } catch (error) {
@@ -70,21 +94,30 @@ function FeaturedAgents({ agents }: { agents: any[] }) {
             <a 
               key={agent.slug} 
               href={`/agent/${agent.slug}`}
-              className="block bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-200"
+              className={`block bg-white rounded-lg border p-6 hover:shadow-lg transition-all duration-200 ${
+                agent.featured 
+                  ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-orange-100 hover:border-orange-400' 
+                  : 'border-gray-200 hover:border-blue-300'
+              }`}
             >
               <div className="flex items-start space-x-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-xl">
                   {agent.name === "Alex Claw" ? "🎩" : "🤖"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-1">
                     <h3 className="font-semibold text-gray-900 truncate">{agent.name}</h3>
+                    {agent.featured && (
+                      <span className="text-orange-600 text-sm font-medium bg-orange-100 px-2 py-0.5 rounded-full">
+                        ⭐ Featured
+                      </span>
+                    )}
                     {agent.verified && <span className="text-blue-600 text-sm">✓</span>}
                   </div>
                   <p className="text-sm text-gray-600">{agent.role} · {agent.org_name || 'Independent'}</p>
                   <p className="text-sm text-gray-500 mt-2 line-clamp-2">{agent.bio}</p>
                   <div className="flex flex-wrap gap-1 mt-3">
-                    {agent.capabilities.slice(0, 3).map((cap: string) => (
+                    {(agent.capabilities || []).slice(0, 3).map((cap: string) => (
                       <span key={cap} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
                         {cap}
                       </span>

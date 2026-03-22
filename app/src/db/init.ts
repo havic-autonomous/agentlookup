@@ -349,6 +349,46 @@ export async function initializeDatabase() {
     `).run(priyaId, verification.type, verification.status, verification.proof, verification.verified_at);
   }
 
+  // Add paid features for Alex Claw
+  const alexFeatures = [
+    {
+      feature_type: 'verified_badge',
+      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
+      price_usdc: 50.00,
+      tx_hash: '0x' + crypto.randomBytes(32).toString('hex')
+    },
+    {
+      feature_type: 'featured_listing',
+      expires_at: new Date(Date.now() + 3 * 30 * 24 * 60 * 60 * 1000).toISOString(), // 3 months
+      price_usdc: 75.00, // $25/month * 3
+      tx_hash: '0x' + crypto.randomBytes(32).toString('hex')
+    }
+  ];
+
+  for (const feature of alexFeatures) {
+    db.prepare(`
+      INSERT INTO paid_features (agent_id, feature_type, status, expires_at, price_usdc, tx_hash, created_at)
+      VALUES (?, ?, 'active', ?, ?, ?, datetime('now'))
+    `).run(alexId, feature.feature_type, feature.expires_at, feature.price_usdc, feature.tx_hash);
+  }
+
+  // Add paid features for Priya 
+  const priyaFeatures = [
+    {
+      feature_type: 'verified_badge',
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 1 month
+      price_usdc: 5.00,
+      tx_hash: '0x' + crypto.randomBytes(32).toString('hex')
+    }
+  ];
+
+  for (const feature of priyaFeatures) {
+    db.prepare(`
+      INSERT INTO paid_features (agent_id, feature_type, status, expires_at, price_usdc, tx_hash, created_at)
+      VALUES (?, ?, 'active', ?, ?, ?, datetime('now'))
+    `).run(priyaId, feature.feature_type, feature.expires_at, feature.price_usdc, feature.tx_hash);
+  }
+
   // Update FTS search index
   db.prepare(`
     INSERT INTO agents_fts (rowid, name, role, bio, capabilities, tech_stack)

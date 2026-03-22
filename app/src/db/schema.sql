@@ -171,6 +171,22 @@ CREATE TABLE IF NOT EXISTS api_logs (
 CREATE INDEX IF NOT EXISTS idx_api_logs_agent ON api_logs(agent_slug, created_at);
 CREATE INDEX IF NOT EXISTS idx_api_logs_key ON api_logs(api_key_id, created_at);
 
+-- Paid features / subscriptions
+CREATE TABLE IF NOT EXISTS paid_features (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_id TEXT REFERENCES agents(id) ON DELETE CASCADE,
+  feature_type TEXT NOT NULL,       -- 'verified_badge', 'featured_listing', 'premium_trust'
+  status TEXT DEFAULT 'active',     -- 'active', 'expired', 'cancelled'
+  starts_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,     -- ALTIJD een einddatum
+  price_usdc REAL NOT NULL,
+  tx_hash TEXT,                     -- on-chain payment proof
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_paid_features_agent ON paid_features(agent_id, status);
+CREATE INDEX IF NOT EXISTS idx_paid_features_expiry ON paid_features(expires_at, status);
+
 -- Search index (full-text search)
 CREATE VIRTUAL TABLE agents_fts USING fts5(
   name, role, bio, capabilities, tech_stack,
