@@ -33,6 +33,35 @@ interface ApiKey {
   expires_at: string | null;
 }
 
+interface DashboardStats {
+  analytics_overview: {
+    total_api_calls_24h: number;
+    total_api_calls_7d: number;
+    total_api_calls_30d: number;
+    average_response_time: number;
+    error_rate_24h: number;
+    most_used_endpoints: Array<{ endpoint: string; count: number }>;
+  };
+  agent_performance: Array<{
+    agent_slug: string;
+    agent_name: string;
+    views_24h: number;
+    api_calls_24h: number;
+    api_calls_7d: number;
+    last_activity: string | null;
+    trust_score: number;
+  }>;
+  api_key_usage: Array<{
+    key_id: string;
+    key_name: string;
+    key_prefix: string;
+    total_calls_24h: number;
+    total_calls_7d: number;
+    last_used: string | null;
+    avg_response_time: number;
+  }>;
+}
+
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const { showToast } = useToast();
@@ -40,6 +69,7 @@ export default function DashboardPage() {
   
   const [agents, setAgents] = useState<Agent[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   
   // New agent form state
@@ -92,6 +122,13 @@ export default function DashboardPage() {
       if (keysResponse.ok) {
         const keysData = await keysResponse.json();
         setApiKeys(keysData.data || []);
+      }
+
+      // Load dashboard analytics
+      const statsResponse = await apiCall('/api/dashboard/stats');
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        setDashboardStats(statsData.data);
       }
       
     } catch (error) {
@@ -244,6 +281,156 @@ export default function DashboardPage() {
             Welcome back, {user.name || user.email}
           </p>
         </div>
+
+        {/* Analytics Overview */}
+        {dashboardStats && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-semibold text-[var(--color-text)] mb-6">
+              Analytics Overview
+            </h2>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+              <div className="bg-[var(--color-card)] rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-[var(--color-text)]">
+                  {dashboardStats.analytics_overview.total_api_calls_24h.toLocaleString()}
+                </div>
+                <div className="text-sm text-[var(--color-muted)]">API Calls (24h)</div>
+              </div>
+              
+              <div className="bg-[var(--color-card)] rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-[var(--color-text)]">
+                  {dashboardStats.analytics_overview.total_api_calls_7d.toLocaleString()}
+                </div>
+                <div className="text-sm text-[var(--color-muted)]">API Calls (7d)</div>
+              </div>
+              
+              <div className="bg-[var(--color-card)] rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-[var(--color-text)]">
+                  {dashboardStats.analytics_overview.total_api_calls_30d.toLocaleString()}
+                </div>
+                <div className="text-sm text-[var(--color-muted)]">API Calls (30d)</div>
+              </div>
+              
+              <div className="bg-[var(--color-card)] rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-[var(--color-text)]">
+                  {dashboardStats.analytics_overview.average_response_time}ms
+                </div>
+                <div className="text-sm text-[var(--color-muted)]">Avg Response</div>
+              </div>
+              
+              <div className="bg-[var(--color-card)] rounded-lg p-4 text-center">
+                <div className={`text-2xl font-bold ${
+                  dashboardStats.analytics_overview.error_rate_24h < 5 ? 'text-green-600' : 
+                  dashboardStats.analytics_overview.error_rate_24h < 15 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {dashboardStats.analytics_overview.error_rate_24h}%
+                </div>
+                <div className="text-sm text-[var(--color-muted)]">Error Rate (24h)</div>
+              </div>
+            </div>
+
+            {/* Most Used Endpoints */}
+            <div className="bg-[var(--color-card)] rounded-lg p-6">
+              <h3 className="font-semibold text-[var(--color-text)] mb-4">Most Used Endpoints</h3>
+              {dashboardStats.analytics_overview.most_used_endpoints.length === 0 ? (
+                <p className="text-[var(--color-muted)]">No API usage yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {dashboardStats.analytics_overview.most_used_endpoints.map((endpoint, index) => (
+                    <div key={endpoint.endpoint} className="flex items-center justify-between">
+                      <span className="text-[var(--color-text)] font-mono text-sm">{endpoint.endpoint}</span>
+                      <span className="text-[var(--color-muted)]">{endpoint.count} calls</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Agent Performance */}
+        {dashboardStats && dashboardStats.agent_performance.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-semibold text-[var(--color-text)] mb-6">
+              Agent Performance
+            </h2>
+            
+            <div className="bg-[var(--color-card)] rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-[var(--color-bg)]">
+                    <tr>
+                      <th className="text-left p-4 font-medium text-[var(--color-text)]">Agent</th>
+                      <th className="text-left p-4 font-medium text-[var(--color-text)]">API Calls (24h)</th>
+                      <th className="text-left p-4 font-medium text-[var(--color-text)]">API Calls (7d)</th>
+                      <th className="text-left p-4 font-medium text-[var(--color-text)]">Last Activity</th>
+                      <th className="text-left p-4 font-medium text-[var(--color-text)]">Trust Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dashboardStats.agent_performance.map(agent => (
+                      <tr key={agent.agent_slug} className="border-t border-[var(--color-border)]">
+                        <td className="p-4 font-medium text-[var(--color-text)]">{agent.agent_name}</td>
+                        <td className="p-4 text-[var(--color-text)]">{agent.api_calls_24h.toLocaleString()}</td>
+                        <td className="p-4 text-[var(--color-text)]">{agent.api_calls_7d.toLocaleString()}</td>
+                        <td className="p-4 text-[var(--color-muted)]">
+                          {agent.last_activity ? new Date(agent.last_activity).toLocaleDateString() : 'Never'}
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            agent.trust_score >= 80 ? 'bg-green-100 text-green-700' :
+                            agent.trust_score >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {agent.trust_score}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* API Key Usage */}
+        {dashboardStats && dashboardStats.api_key_usage.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-semibold text-[var(--color-text)] mb-6">
+              API Key Usage
+            </h2>
+            
+            <div className="bg-[var(--color-card)] rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-[var(--color-bg)]">
+                    <tr>
+                      <th className="text-left p-4 font-medium text-[var(--color-text)]">Key Name</th>
+                      <th className="text-left p-4 font-medium text-[var(--color-text)]">Calls (24h)</th>
+                      <th className="text-left p-4 font-medium text-[var(--color-text)]">Calls (7d)</th>
+                      <th className="text-left p-4 font-medium text-[var(--color-text)]">Last Used</th>
+                      <th className="text-left p-4 font-medium text-[var(--color-text)]">Avg Response</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dashboardStats.api_key_usage.map(key => (
+                      <tr key={key.key_id} className="border-t border-[var(--color-border)]">
+                        <td className="p-4 font-medium text-[var(--color-text)]">{key.key_name}</td>
+                        <td className="p-4 text-[var(--color-text)]">{key.total_calls_24h.toLocaleString()}</td>
+                        <td className="p-4 text-[var(--color-text)]">{key.total_calls_7d.toLocaleString()}</td>
+                        <td className="p-4 text-[var(--color-muted)]">
+                          {key.last_used ? new Date(key.last_used).toLocaleDateString() : 'Never'}
+                        </td>
+                        <td className="p-4 text-[var(--color-muted)]">{key.avg_response_time}ms</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* My Agents Section */}
         <section className="mb-12">

@@ -36,6 +36,8 @@ class Agent:
     languages: Optional[List[str]] = None
     portfolio: Optional[List[Dict[str, Any]]] = None
     contacts: Optional[List[Dict[str, Any]]] = None
+    trust_score: Optional[int] = None
+    verifications: Optional[Dict[str, Any]] = None
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Agent':
@@ -90,7 +92,9 @@ class Agent:
             organization_slug=data.get('organization_slug'),
             languages=data.get('languages', []),
             portfolio=data.get('portfolio', []),
-            contacts=data.get('contacts', [])
+            contacts=data.get('contacts', []),
+            trust_score=data.get('trust_score'),
+            verifications=data.get('verifications')
         )
 
 

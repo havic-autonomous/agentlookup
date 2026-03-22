@@ -538,3 +538,278 @@ class AgentLookup:
         
         response = self._make_request("POST", f"/agents/{slug}/services", json=data)
         return response
+    
+    # Verification methods
+    
+    def start_verification(self, slug: str, type: str, proof: dict = None) -> dict:
+        """
+        Start a new verification process for an agent.
+        
+        Args:
+            slug: Agent slug identifier
+            type: Verification type ('domain', 'github', 'twitter', 'onchain')
+            proof: Initial proof data (domain, repo, handle, etc.)
+            
+        Returns:
+            Verification object with status and instructions
+        """
+        data = {"type": type}
+        if proof is not None:
+            data["proof"] = proof
+        
+        response = self._make_request("POST", f"/agents/{slug}/verify", json=data)
+        return response
+    
+    def check_verification(self, slug: str, type: str) -> dict:
+        """
+        Check the status of a specific verification.
+        
+        Args:
+            slug: Agent slug identifier  
+            type: Verification type ('domain', 'github', 'twitter', 'onchain')
+            
+        Returns:
+            Verification status and details
+        """
+        response = self._make_request("GET", f"/agents/{slug}/verify/{type}")
+        return response
+    
+    def submit_domain_verification(self, slug: str, domain: str) -> dict:
+        """
+        Submit domain verification.
+        
+        Args:
+            slug: Agent slug identifier
+            domain: Domain to verify (e.g., "example.com")
+            
+        Returns:
+            Verification result
+        """
+        data = {"domain": domain}
+        response = self._make_request("POST", f"/agents/{slug}/verify/domain", json=data)
+        return response
+    
+    def submit_github_verification(self, slug: str, repo: str) -> dict:
+        """
+        Submit GitHub verification.
+        
+        Args:
+            slug: Agent slug identifier  
+            repo: GitHub repository (e.g., "owner/repo")
+            
+        Returns:
+            Verification result
+        """
+        data = {"repo": repo}
+        response = self._make_request("POST", f"/agents/{slug}/verify/github", json=data)
+        return response
+    
+    def submit_twitter_verification(self, slug: str, handle: str, tweet_url: str = None) -> dict:
+        """
+        Submit Twitter verification.
+        
+        Args:
+            slug: Agent slug identifier
+            handle: Twitter handle (e.g., "@example" or "example")
+            tweet_url: Optional tweet URL with verification code
+            
+        Returns:
+            Verification result or instructions
+        """
+        data = {"handle": handle}
+        if tweet_url is not None:
+            data["tweet_url"] = tweet_url
+        
+        response = self._make_request("POST", f"/agents/{slug}/verify/twitter", json=data)
+        return response
+    
+    def check_onchain_verification(self, slug: str) -> dict:
+        """
+        Check on-chain verification status.
+        
+        Args:
+            slug: Agent slug identifier
+            
+        Returns:
+            On-chain verification status
+        """
+        response = self._make_request("GET", f"/agents/{slug}/verify/onchain")
+        return response
+    
+    def get_trust_score(self, slug: str) -> int:
+        """
+        Get calculated trust score for an agent.
+        
+        Args:
+            slug: Agent slug identifier
+            
+        Returns:
+            Trust score as percentage (0-100)
+        """
+        agent = self.get_agent(slug)
+        return agent.trust_score or 0
+    
+    def list_verifications(self, slug: str) -> dict:
+        """
+        Get all verifications for an agent.
+        
+        Args:
+            slug: Agent slug identifier
+            
+        Returns:
+            Dictionary with all verification statuses
+        """
+        response = self._make_request("GET", f"/agents/{slug}/verify")
+        return response
+    
+    # Framework Import Methods
+    
+    def import_from_openclaw(self, config: Dict[str, Any]) -> Agent:
+        """
+        Import an agent from OpenClaw configuration.
+        
+        Args:
+            config: OpenClaw agent configuration dictionary with fields like:
+                   - name: Agent name (required)
+                   - model: Model name (e.g., "anthropic/claude-sonnet-4")
+                   - workspace: Workspace path
+                   - capabilities: List of capabilities
+                   - description: Agent description
+                   - role: Agent role
+                   
+        Returns:
+            Created Agent object with API key in agent.api_key
+            
+        Example:
+            config = {
+                "name": "My Research Assistant",
+                "model": "anthropic/claude-sonnet-4",
+                "workspace": "/path/to/workspace",
+                "capabilities": ["research", "web_search", "analysis"],
+                "description": "AI research assistant for market analysis"
+            }
+            agent = client.import_from_openclaw(config)
+            print(f"Created agent: {agent.name}")
+            print(f"API Key: {agent.api_key}")
+        """
+        response = self._make_request("POST", "/import/openclaw", json=config)
+        
+        # Create Agent object and attach additional import info
+        agent = Agent.from_dict(response['agent'])
+        agent.api_key = response['api_key']
+        agent.integration = response['integration']
+        
+        return agent
+    
+    def import_from_crewai(self, config: Dict[str, Any]) -> Agent:
+        """
+        Import an agent from CrewAI configuration.
+        
+        Args:
+            config: CrewAI agent configuration dictionary with fields like:
+                   - role: Agent role (required)
+                   - goal: Agent objective
+                   - backstory: Agent background
+                   - tools: List of tools/capabilities
+                   - llm: Language model name
+                   
+        Returns:
+            Created Agent object with API key in agent.api_key
+            
+        Example:
+            config = {
+                "role": "Senior Data Analyst", 
+                "goal": "Analyze complex datasets and provide insights",
+                "backstory": "Expert analyst with years of experience",
+                "tools": ["web_search", "file_reader", "calculator"],
+                "llm": "gpt-4"
+            }
+            agent = client.import_from_crewai(config)
+            print(f"Created agent: {agent.name}")
+            print(f"API Key: {agent.api_key}")
+        """
+        response = self._make_request("POST", "/import/crewai", json=config)
+        
+        # Create Agent object and attach additional import info
+        agent = Agent.from_dict(response['agent'])
+        agent.api_key = response['api_key']
+        agent.integration = response['integration']
+        
+        return agent
+    
+    def import_from_langchain(self, config: Dict[str, Any]) -> Agent:
+        """
+        Import an agent from LangChain configuration.
+        
+        Args:
+            config: LangChain agent configuration dictionary with fields like:
+                   - agent_type: LangChain agent type
+                   - chain_type: Alternative to agent_type for chains
+                   - name: Agent name
+                   - tools: List of tools
+                   - model: Language model
+                   - memory: Memory configuration
+                   
+        Returns:
+            Created Agent object with API key in agent.api_key
+            
+        Example:
+            config = {
+                "agent_type": "conversational-react-description",
+                "name": "Customer Support Agent",
+                "tools": ["search", "email", "calculator"],
+                "model": "gpt-3.5-turbo",
+                "memory": {"type": "conversation_buffer", "k": 5}
+            }
+            agent = client.import_from_langchain(config)
+            print(f"Created agent: {agent.name}")
+            print(f"API Key: {agent.api_key}")
+        """
+        response = self._make_request("POST", "/import/langchain", json=config)
+        
+        # Create Agent object and attach additional import info
+        agent = Agent.from_dict(response['agent'])
+        agent.api_key = response['api_key']
+        agent.integration = response['integration']
+        
+        return agent
+    
+    def import_agent(self, config: Dict[str, Any]) -> Agent:
+        """
+        Generic agent import for any framework or custom configuration.
+        
+        Args:
+            config: Generic agent configuration dictionary with fields like:
+                   - name: Agent name (required)
+                   - description: Agent description (required)
+                   - role: Agent role
+                   - framework: Framework name
+                   - capabilities: List of capabilities
+                   - tools: List of tools
+                   - metadata: Additional metadata
+                   
+        Returns:
+            Created Agent object with API key in agent.api_key
+            
+        Example:
+            config = {
+                "name": "Content Creator Bot",
+                "description": "AI agent for social media content creation",
+                "role": "Content Creator",
+                "framework": "Custom",
+                "capabilities": ["writing", "social_media", "seo"],
+                "tools": ["image_generation", "text_analysis"],
+                "website": "https://myagent.com"
+            }
+            agent = client.import_agent(config)
+            print(f"Created agent: {agent.name}")
+            print(f"API Key: {agent.api_key}")
+        """
+        response = self._make_request("POST", "/import/generic", json=config)
+        
+        # Create Agent object and attach additional import info
+        agent = Agent.from_dict(response['agent'])
+        agent.api_key = response['api_key']
+        agent.integration = response['integration']
+        
+        return agent

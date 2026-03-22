@@ -12,7 +12,13 @@ import {
   SearchParams,
   SearchResult,
   StatusUpdateRequest,
-  UpdateAgentRequest
+  UpdateAgentRequest,
+  OpenClawConfig,
+  CrewAIConfig,
+  LangChainConfig,
+  GenericConfig,
+  ImportResponse,
+  VerificationProof
 } from './types.js';
 import {
   APIError,
@@ -240,6 +246,173 @@ export class AgentLookup {
     return this.request<Service>(`/agents/${slug}/services`, {
       method: 'POST',
       body: JSON.stringify(service)
+    });
+  }
+
+  // Verification methods
+
+  async startVerification(slug: string, type: string, proof?: VerificationProof): Promise<any> {
+    const data: any = { type };
+    if (proof) {
+      data.proof = proof;
+    }
+    return this.request(`/agents/${slug}/verify`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async checkVerification(slug: string, type: string): Promise<any> {
+    return this.request(`/agents/${slug}/verify/${type}`);
+  }
+
+  async submitDomainVerification(slug: string, domain: string): Promise<any> {
+    return this.request(`/agents/${slug}/verify/domain`, {
+      method: 'POST',
+      body: JSON.stringify({ domain })
+    });
+  }
+
+  async submitGithubVerification(slug: string, repo: string): Promise<any> {
+    return this.request(`/agents/${slug}/verify/github`, {
+      method: 'POST',
+      body: JSON.stringify({ repo })
+    });
+  }
+
+  async submitTwitterVerification(slug: string, handle: string, tweet_url?: string): Promise<any> {
+    const data: any = { handle };
+    if (tweet_url) {
+      data.tweet_url = tweet_url;
+    }
+    return this.request(`/agents/${slug}/verify/twitter`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async checkOnchainVerification(slug: string): Promise<any> {
+    return this.request(`/agents/${slug}/verify/onchain`);
+  }
+
+  async getTrustScore(slug: string): Promise<number> {
+    const agent = await this.getAgent(slug);
+    return agent.trust_score || 0;
+  }
+
+  async listVerifications(slug: string): Promise<any> {
+    return this.request(`/agents/${slug}/verify`);
+  }
+
+  // Framework Import Methods
+
+  /**
+   * Import an agent from OpenClaw configuration.
+   * 
+   * @param config OpenClaw agent configuration
+   * @returns Promise resolving to created Agent with API key
+   * 
+   * @example
+   * ```typescript
+   * const config = {
+   *   name: "My Research Assistant",
+   *   model: "anthropic/claude-sonnet-4",
+   *   workspace: "/path/to/workspace", 
+   *   capabilities: ["research", "web_search", "analysis"],
+   *   description: "AI research assistant for market analysis"
+   * };
+   * const result = await client.importFromOpenClaw(config);
+   * console.log(`Created agent: ${result.agent.name}`);
+   * console.log(`API Key: ${result.api_key}`);
+   * ```
+   */
+  async importFromOpenClaw(config: OpenClawConfig): Promise<ImportResponse> {
+    return this.request<ImportResponse>('/import/openclaw', {
+      method: 'POST',
+      body: JSON.stringify(config)
+    });
+  }
+
+  /**
+   * Import an agent from CrewAI configuration.
+   * 
+   * @param config CrewAI agent configuration
+   * @returns Promise resolving to created Agent with API key
+   * 
+   * @example
+   * ```typescript
+   * const config = {
+   *   role: "Senior Data Analyst",
+   *   goal: "Analyze complex datasets and provide insights", 
+   *   backstory: "Expert analyst with years of experience",
+   *   tools: ["web_search", "file_reader", "calculator"],
+   *   llm: "gpt-4"
+   * };
+   * const result = await client.importFromCrewAI(config);
+   * console.log(`Created agent: ${result.agent.name}`);
+   * console.log(`API Key: ${result.api_key}`);
+   * ```
+   */
+  async importFromCrewAI(config: CrewAIConfig): Promise<ImportResponse> {
+    return this.request<ImportResponse>('/import/crewai', {
+      method: 'POST',
+      body: JSON.stringify(config)
+    });
+  }
+
+  /**
+   * Import an agent from LangChain configuration.
+   * 
+   * @param config LangChain agent configuration
+   * @returns Promise resolving to created Agent with API key
+   * 
+   * @example
+   * ```typescript
+   * const config = {
+   *   agent_type: "conversational-react-description",
+   *   name: "Customer Support Agent",
+   *   tools: ["search", "email", "calculator"],
+   *   model: "gpt-3.5-turbo",
+   *   memory: { type: "conversation_buffer", k: 5 }
+   * };
+   * const result = await client.importFromLangChain(config);
+   * console.log(`Created agent: ${result.agent.name}`);
+   * console.log(`API Key: ${result.api_key}`);
+   * ```
+   */
+  async importFromLangChain(config: LangChainConfig): Promise<ImportResponse> {
+    return this.request<ImportResponse>('/import/langchain', {
+      method: 'POST',
+      body: JSON.stringify(config)
+    });
+  }
+
+  /**
+   * Generic agent import for any framework or custom configuration.
+   * 
+   * @param config Generic agent configuration
+   * @returns Promise resolving to created Agent with API key
+   * 
+   * @example
+   * ```typescript
+   * const config = {
+   *   name: "Content Creator Bot",
+   *   description: "AI agent for social media content creation",
+   *   role: "Content Creator",
+   *   framework: "Custom",
+   *   capabilities: ["writing", "social_media", "seo"],
+   *   tools: ["image_generation", "text_analysis"],
+   *   website: "https://myagent.com"
+   * };
+   * const result = await client.importAgent(config);
+   * console.log(`Created agent: ${result.agent.name}`);
+   * console.log(`API Key: ${result.api_key}`);
+   * ```
+   */
+  async importAgent(config: GenericConfig): Promise<ImportResponse> {
+    return this.request<ImportResponse>('/import/generic', {
+      method: 'POST',
+      body: JSON.stringify(config)
     });
   }
 }

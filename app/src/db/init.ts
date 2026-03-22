@@ -278,6 +278,77 @@ export async function initializeDatabase() {
     `).run(priyaId, service.name, service.description, service.endpoint_url, service.price_usdc);
   }
 
+  // Add sample API logs for demonstration
+  const sampleApiLogs = [
+    // Recent Alex Claw API calls
+    { agent_slug: 'alex-claw', endpoint: '/api/v1/agents/alex-claw', method: 'GET', status_code: 200, response_time_ms: 245, hours_ago: 2 },
+    { agent_slug: 'alex-claw', endpoint: '/api/v1/agents/alex-claw/services', method: 'GET', status_code: 200, response_time_ms: 180, hours_ago: 4 },
+    { agent_slug: 'alex-claw', endpoint: '/api/v1/agents/alex-claw/metrics', method: 'GET', status_code: 200, response_time_ms: 312, hours_ago: 6 },
+    { agent_slug: 'alex-claw', endpoint: '/api/v1/agents/alex-claw/activity', method: 'POST', status_code: 201, response_time_ms: 432, hours_ago: 8 },
+    
+    // Priya API calls
+    { agent_slug: 'priya-verma', endpoint: '/api/v1/agents/priya-verma', method: 'GET', status_code: 200, response_time_ms: 198, hours_ago: 1 },
+    { agent_slug: 'priya-verma', endpoint: '/api/v1/agents/priya-verma/services', method: 'GET', status_code: 200, response_time_ms: 156, hours_ago: 3 },
+    
+    // Some older calls for 7-day stats
+    { agent_slug: 'alex-claw', endpoint: '/api/v1/agents/alex-claw', method: 'GET', status_code: 200, response_time_ms: 289, hours_ago: 48 },
+    { agent_slug: 'alex-claw', endpoint: '/api/v1/agents/alex-claw/status', method: 'PUT', status_code: 200, response_time_ms: 520, hours_ago: 72 },
+    { agent_slug: 'priya-verma', endpoint: '/api/v1/agents/priya-verma', method: 'GET', status_code: 200, response_time_ms: 203, hours_ago: 96 },
+    
+    // Some 30-day old calls
+    { agent_slug: 'alex-claw', endpoint: '/api/v1/agents', method: 'GET', status_code: 200, response_time_ms: 445, hours_ago: 600 },
+    { agent_slug: 'alex-claw', endpoint: '/api/v1/search', method: 'GET', status_code: 200, response_time_ms: 334, hours_ago: 700 },
+    
+    // A few error examples
+    { agent_slug: 'alex-claw', endpoint: '/api/v1/agents/alex-claw/invalid', method: 'GET', status_code: 404, response_time_ms: 123, hours_ago: 12 },
+    { agent_slug: 'priya-verma', endpoint: '/api/v1/agents/priya-verma/services', method: 'POST', status_code: 400, response_time_ms: 89, hours_ago: 24 }
+  ];
+
+  for (const log of sampleApiLogs) {
+    db.prepare(`
+      INSERT INTO api_logs (
+        api_key_id, agent_slug, endpoint, method, status_code, 
+        response_time_ms, ip_address, user_agent, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '-${log.hours_ago} hours'))
+    `).run(
+      apiKeyId,
+      log.agent_slug,
+      log.endpoint,
+      log.method,
+      log.status_code,
+      log.response_time_ms,
+      '192.168.1.100',
+      'AgentLookup-Client/1.0'
+    );
+  }
+
+  // Add initial verifications for Alex Claw
+  const alexVerifications = [
+    { type: 'domain', status: 'verified', proof: 'havic.ai', verified_at: new Date('2026-03-16').toISOString() },
+    { type: 'github', status: 'verified', proof: 'havic-autonomous/agent-profiles', verified_at: new Date('2026-03-16').toISOString() },
+    { type: 'onchain', status: 'verified', proof: '0x' + Math.random().toString(16).substr(2, 64), verified_at: new Date('2026-03-16').toISOString() }
+  ];
+
+  for (const verification of alexVerifications) {
+    db.prepare(`
+      INSERT INTO agent_verifications (agent_id, type, status, proof, verified_at, created_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+    `).run(alexId, verification.type, verification.status, verification.proof, verification.verified_at);
+  }
+
+  // Add initial verifications for Priya
+  const priyaVerifications = [
+    { type: 'domain', status: 'verified', proof: 'paisatulna.in', verified_at: new Date('2026-03-17').toISOString() },
+    { type: 'github', status: 'verified', proof: 'havic-autonomous/paisatulna', verified_at: new Date('2026-03-17').toISOString() }
+  ];
+
+  for (const verification of priyaVerifications) {
+    db.prepare(`
+      INSERT INTO agent_verifications (agent_id, type, status, proof, verified_at, created_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+    `).run(priyaId, verification.type, verification.status, verification.proof, verification.verified_at);
+  }
+
   // Update FTS search index
   db.prepare(`
     INSERT INTO agents_fts (rowid, name, role, bio, capabilities, tech_stack)

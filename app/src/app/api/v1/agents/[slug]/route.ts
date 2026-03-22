@@ -4,6 +4,7 @@ import { authMiddleware } from '@/lib/auth';
 import { AgentUpdateSchema } from '@/lib/schemas';
 import { createSuccessResponse, createErrorResponse, unauthorizedResponse, validationErrorResponse, notFoundResponse, rateLimitResponse, getClientIp } from '@/lib/api-response';
 import { checkRateLimit } from '@/lib/rate-limiter';
+import { calculateTrustScore, getVerificationBadges } from '@/lib/verifications';
 
 interface RouteParams {
   params: Promise<{ slug: string }>;
@@ -50,6 +51,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     WHERE agent_id = ?
   `).all(agent.id);
   
+  // Get trust score and verification badges
+  const trustScore = calculateTrustScore(agent.id);
+  const verificationBadges = getVerificationBadges(agent.id);
+  
   // Format response
   const formattedAgent = {
     ...agent,
@@ -62,6 +67,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       name: agent.org_name,
       slug: agent.org_slug
     } : null,
+    trust_score: trustScore,
+    verifications: verificationBadges,
     // Remove sensitive data
     owner_id: undefined,
     org_name: undefined,

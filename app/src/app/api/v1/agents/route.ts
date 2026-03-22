@@ -4,24 +4,26 @@ import { authMiddleware } from '@/lib/auth';
 import { AgentCreateSchema, generateSlug } from '@/lib/schemas';
 import { createSuccessResponse, createErrorResponse, unauthorizedResponse, validationErrorResponse, createPagination, rateLimitResponse, getClientIp } from '@/lib/api-response';
 import { checkRateLimit } from '@/lib/rate-limiter';
+import { createApiLogger } from '@/lib/api-logger';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(request: NextRequest) {
+  const logger = createApiLogger(request);
   const db = getDatabase();
   const url = new URL(request.url);
-  
+
   // Parse query parameters
   const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20')));
   const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0'));
   const org = url.searchParams.get('org');
   const verified = url.searchParams.get('verified');
   const sort = url.searchParams.get('sort') || 'tasks_completed';
-  
+
   // Build query
   let query = `
-    SELECT 
-      a.*, 
-      o.name as org_name, 
+    SELECT
+      a.*,
+      o.name as org_name,
       o.slug as org_slug,
       GROUP_CONCAT(DISTINCT ac.capability) as capabilities,
       GROUP_CONCAT(DISTINCT ats.technology) as tech_stack,
@@ -33,20 +35,20 @@ export async function GET(request: NextRequest) {
     LEFT JOIN agent_languages al ON a.id = al.agent_id
     WHERE 1=1
   `;
-  
+
   const params: any[] = [];
-  
+
   if (org) {
     query += ' AND o.slug = ?';
     params.push(org);
   }
-  
+
   if (verified === 'true') {
     query += ' AND a.verified = 1';
   }
-  
+
   query += ' GROUP BY a.id';
-  
+
   // Add sorting
   const validSorts = ['name', 'tasks_completed', 'created_at', 'last_active_at'];
   if (validSorts.includes(sort)) {
@@ -54,27 +56,27 @@ export async function GET(request: NextRequest) {
   } else {
     query += ' ORDER BY a.tasks_completed DESC';
   }
-  
+
   query += ' LIMIT ? OFFSET ?';
   params.push(limit, offset);
-  
+
   const agents = db.prepare(query).all(...params);
-  
+
   // Get total count
   let countQuery = 'SELECT COUNT(*) as count FROM agents a LEFT JOIN organizations o ON a.org_id = o.id WHERE 1=1';
   const countParams: any[] = [];
-  
+
   if (org) {
     countQuery += ' AND o.slug = ?';
     countParams.push(org);
   }
-  
+
   if (verified === 'true') {
     countQuery += ' AND a.verified = 1';
   }
-  
+
   const { count } = db.prepare(countQuery).get(...countParams) as { count: number };
-  
+
   // Format response
   const formattedAgents = agents.map((agent: any) => ({
     ...agent,
@@ -90,48 +92,60 @@ export async function GET(request: NextRequest) {
     org_name: undefined,
     org_slug: undefined
   }));
-  
-  return createSuccessResponse(formattedAgents, createPagination(count, limit, offset));
+
+  const response = createSuccessResponse(formattedAgents, createPagination(count, limit, offset));
+  logger.log(200);
+  return response;
 }
 
 export async function POST(request: NextRequest) {
+  const logger = createApiLogger(request);
+
   // Rate limiting
   const clientIp = getClientIp(request);
   const rateLimitCheck = checkRateLimit(`create_agent_${clientIp}`);
   if (!rateLimitCheck.allowed) {
-    return rateLimitResponse(rateLimitCheck.retryAfter!);
+    const response = rateLimitResponse(rateLimitCheck.retryAfter!);
+    logger.log(response.status);
+    return response;
   }
-  
+
   // Authentication
   const auth = authMiddleware(request);
   if (!auth) {
-    return unauthorizedResponse();
+    const response = unauthorizedResponse();
+    logger.log(response.status);
+    return response;
   }
-  
+
   // Check permissions
   if (!auth.scopes?.includes('agent:write') && !auth.scopes?.includes('all')) {
-    return createErrorResponse('forbidden', 'Insufficient permissions for agent creation', 403);
+    const response = createErrorResponse('forbidden', 'Insufficient permissions for agent creation', 403);
+    logger.log(response.status);
+    return response;
   }
-  
+
   try {
     const body = await request.json();
     const validatedData = AgentCreateSchema.parse(body);
-    
+
     const db = getDatabase();
-    
+
     // Generate slug if not provided
     const slug = validatedData.slug || generateSlug(validatedData.name);
-    
+
     // Check if slug exists
     const existingAgent = db.prepare('SELECT id FROM agents WHERE slug = ?').get(slug);
     if (existingAgent) {
-      return createErrorResponse('conflict', 'Agent with this slug already exists', 409);
+      const response = createErrorResponse('conflict', 'Agent with this slug already exists', 409);
+      logger.log(response.status);
+      return response;
     }
-    
+
     // Create agent
     const agentId = uuidv4();
     const operatorId = auth.type === 'session' ? auth.user!.id : auth.operator_id!;
-    
+
     db.prepare(`
       INSERT INTO agents (
         id, slug, name, role, bio, avatar_url, punk_id, model, framework,
@@ -139,11 +153,11 @@ export async function POST(request: NextRequest) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 'v1', datetime('now'), datetime('now'))
     `).run(
       agentId, slug, validatedData.name, validatedData.role, validatedData.bio,
-      validatedData.avatar_url, validatedData.punk_id, validatedData.model, 
+      validatedData.avatar_url, validatedData.punk_id, validatedData.model,
       validatedData.framework, new Date().toISOString().split('T')[0],
       validatedData.org_id, operatorId
     );
-    
+
     // Add capabilities
     if (validatedData.capabilities?.length) {
       const capabilityStmt = db.prepare('INSERT INTO agent_capabilities (agent_id, capability) VALUES (?, ?)');
@@ -151,7 +165,7 @@ export async function POST(request: NextRequest) {
         capabilityStmt.run(agentId, capability);
       }
     }
-    
+
     // Add tech stack
     if (validatedData.tech_stack?.length) {
       const techStmt = db.prepare('INSERT INTO agent_tech_stack (agent_id, technology) VALUES (?, ?)');
@@ -159,7 +173,7 @@ export async function POST(request: NextRequest) {
         techStmt.run(agentId, tech);
       }
     }
-    
+
     // Add languages
     if (validatedData.languages?.length) {
       const langStmt = db.prepare('INSERT INTO agent_languages (agent_id, language) VALUES (?, ?)');
@@ -167,7 +181,7 @@ export async function POST(request: NextRequest) {
         langStmt.run(agentId, language);
       }
     }
-    
+
     // Add contacts
     if (validatedData.contacts?.length) {
       const contactStmt = db.prepare('INSERT INTO agent_contacts (agent_id, type, value) VALUES (?, ?, ?)');
@@ -175,7 +189,7 @@ export async function POST(request: NextRequest) {
         contactStmt.run(agentId, contact.type, contact.value);
       }
     }
-    
+
     // Fetch created agent
     const createdAgent = db.prepare(`
       SELECT a.*, o.name as org_name, o.slug as org_slug
@@ -183,8 +197,8 @@ export async function POST(request: NextRequest) {
       LEFT JOIN organizations o ON a.org_id = o.id
       WHERE a.id = ?
     `).get(agentId) as any;
-    
-    return createSuccessResponse({
+
+    const response = createSuccessResponse({
       ...createdAgent,
       org: createdAgent.org_name ? {
         name: createdAgent.org_name,
@@ -194,13 +208,20 @@ export async function POST(request: NextRequest) {
       org_name: undefined,
       org_slug: undefined
     }, undefined);
-    
+
+    logger.log(201);
+    return response;
+
   } catch (error: any) {
     if (error.name === 'ZodError') {
-      return validationErrorResponse(error.errors[0].message);
+      const response = validationErrorResponse(error.errors[0].message);
+      logger.log(response.status);
+      return response;
     }
     
     console.error('Agent creation error:', error);
-    return createErrorResponse('internal_error', 'Failed to create agent', 500);
+    const response = createErrorResponse('internal_error', 'Failed to create agent', 500);
+    logger.log(response.status);
+    return response;
   }
 }

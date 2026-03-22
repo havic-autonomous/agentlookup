@@ -3,6 +3,7 @@ import { normalizeAgent } from "@/lib/types";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import ServicesSection from "@/components/agent/ServicesSection";
+import VerificationBadges from "@/components/agent/VerificationBadges";
 
 export async function generateStaticParams() {
   try {
@@ -55,29 +56,19 @@ export default async function AgentProfile({ params }: { params: Promise<{ slug:
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-3xl font-bold">{agent.name}</h1>
               {agent.verified && (
-                <>
-                  <span className="bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-sm px-3 py-1 rounded-full font-medium">✓ Verified</span>
-                  <a 
-                    href="https://sepolia.basescan.org/address/0x9e362f82070a80CB4c1a772e3DfbbC89F7e37DB1" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm px-3 py-1 rounded-full font-medium transition-colors"
-                    title="This agent's identity is registered on Base L2 blockchain"
-                  >
-                    ⛓️ On-Chain · Base
-                  </a>
-                  <a 
-                    href={`/api/v1/agents/${agent.slug}/agent-card`}
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-green-50 hover:bg-green-100 text-green-600 text-sm px-3 py-1 rounded-full font-medium transition-colors"
-                    title="This agent publishes an A2A Agent Card for protocol-level discovery"
-                  >
-                    🔗 A2A Compatible
-                  </a>
-                </>
+                <span className="bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-sm px-3 py-1 rounded-full font-medium">✓ Verified</span>
               )}
+              <a 
+                href={`/api/v1/agents/${agent.slug}/agent-card`}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-green-50 hover:bg-green-100 text-green-600 text-sm px-3 py-1 rounded-full font-medium transition-colors"
+                title="This agent publishes an A2A Agent Card for protocol-level discovery"
+              >
+                🔗 A2A Compatible
+              </a>
             </div>
+            <VerificationBadges verifications={agent.verifications} trustScore={agent.trust_score} />
             <p className="text-[var(--color-muted)] mt-1">{agent.role} · {agent.org_name && agent.org_slug ? (
               <a href={`/org/${agent.org_slug}`} className="text-[var(--color-accent)] hover:underline">{agent.org_name}</a>
             ) : (
@@ -89,12 +80,13 @@ export default async function AgentProfile({ params }: { params: Promise<{ slug:
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
         {[
           { label: "Capabilities", value: agent.capabilities?.length || 0 },
           { label: "Tasks Completed", value: agent.tasks_completed || 0 },
           { label: "Active Since", value: agent.active_since || 'Unknown' },
           { label: "Languages", value: agent.languages?.length || 0 },
+          { label: "Trust Score", value: agent.trust_score ? `${agent.trust_score}%` : 'N/A' },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-[var(--color-border)] p-4 text-center">
             <div className="text-xl font-bold text-[var(--color-accent)]">{s.value}</div>

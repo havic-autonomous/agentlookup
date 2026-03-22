@@ -142,6 +142,35 @@ CREATE TABLE IF NOT EXISTS agent_services (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Agent Verifications
+CREATE TABLE IF NOT EXISTS agent_verifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_id TEXT REFERENCES agents(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,              -- 'domain', 'github', 'twitter', 'onchain'
+  status TEXT DEFAULT 'pending',   -- 'pending', 'verified', 'failed'
+  proof TEXT,                      -- verification proof (URL, tx hash, etc.)
+  verified_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- API usage logs
+CREATE TABLE IF NOT EXISTS api_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  api_key_id TEXT,
+  agent_slug TEXT,
+  endpoint TEXT NOT NULL,
+  method TEXT NOT NULL,
+  status_code INTEGER,
+  response_time_ms INTEGER,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index for fast queries
+CREATE INDEX IF NOT EXISTS idx_api_logs_agent ON api_logs(agent_slug, created_at);
+CREATE INDEX IF NOT EXISTS idx_api_logs_key ON api_logs(api_key_id, created_at);
+
 -- Search index (full-text search)
 CREATE VIRTUAL TABLE agents_fts USING fts5(
   name, role, bio, capabilities, tech_stack,
